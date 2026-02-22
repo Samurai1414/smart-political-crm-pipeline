@@ -1,1 +1,726 @@
-<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n</head>\n<body>\n\n</body>\n</html>\n
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Political CRM — ML Pipeline Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --saffron: #FF6B00;
+    --saffron-light: #FF8C38;
+    --green: #00A86B;
+    --green-light: #00C882;
+    --navy: #0A0F1E;
+    --navy-mid: #111827;
+    --navy-light: #1C2640;
+    --navy-border: #1E2D4A;
+    --white: #F4F6FF;
+    --muted: #8897B8;
+    --card: #131D35;
+    --accent-blue: #3B82F6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 56px;
+    border-left: 4px solid var(--saffron);
+    padding-left: 20px;
+  }
+
+  .header .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--saffron);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .header h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--white) 40%, var(--saffron-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header p {
+    color: var(--muted);
+    font-size: 14px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* SECTION TITLES */
+  .section-title {
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--saffron);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--navy-border);
+  }
+
+  /* PIPELINE FLOW */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 56px;
+  }
+
+  .pipeline-step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 0 20px;
+    position: relative;
+  }
+
+  .step-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .step-num {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .step-line {
+    width: 2px;
+    flex: 1;
+    min-height: 20px;
+    background: linear-gradient(to bottom, var(--navy-border), transparent);
+  }
+
+  .step-card {
+    background: var(--card);
+    border: 1px solid var(--navy-border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .step-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .step-card:hover { border-color: var(--saffron); }
+
+  .step-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .step-card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.5px;
+  }
+
+  /* Color variants for steps */
+  .s1 .step-num { background: #1A2A4A; color: var(--saffron); border: 2px solid var(--saffron); }
+  .s1 .step-card::before { background: var(--saffron); }
+  .s1 .tag { color: var(--saffron); border-color: var(--saffron); background: rgba(255,107,0,0.08); }
+
+  .s2 .step-num { background: #1A2A4A; color: #A78BFA; border: 2px solid #A78BFA; }
+  .s2 .step-card::before { background: #A78BFA; }
+  .s2 .tag { color: #A78BFA; border-color: #A78BFA; background: rgba(167,139,250,0.08); }
+
+  .s3 .step-num { background: #1A2A4A; color: var(--accent-blue); border: 2px solid var(--accent-blue); }
+  .s3 .step-card::before { background: var(--accent-blue); }
+  .s3 .tag { color: var(--accent-blue); border-color: var(--accent-blue); background: rgba(59,130,246,0.08); }
+
+  .s4 .step-num { background: #1A2A4A; color: #F472B6; border: 2px solid #F472B6; }
+  .s4 .step-card::before { background: #F472B6; }
+  .s4 .tag { color: #F472B6; border-color: #F472B6; background: rgba(244,114,182,0.08); }
+
+  .s5 .step-num { background: #1A2A4A; color: var(--green); border: 2px solid var(--green); }
+  .s5 .step-card::before { background: var(--green); }
+  .s5 .tag { color: var(--green); border-color: var(--green); background: rgba(0,168,107,0.08); }
+
+  .s6 .step-num { background: #1A2A4A; color: #FBBF24; border: 2px solid #FBBF24; }
+  .s6 .step-card::before { background: #FBBF24; }
+  .s6 .tag { color: #FBBF24; border-color: #FBBF24; background: rgba(251,191,36,0.08); }
+
+  /* 4-MODEL GRID */
+  .models-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+
+  .model-card {
+    background: var(--card);
+    border: 1px solid var(--navy-border);
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .model-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  .model-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .model-card .tool {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .model-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .model-card .corner-accent {
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 0 14px 0 60px;
+    opacity: 0.15;
+  }
+
+  .mc1 { border-top: 2px solid var(--saffron); }
+  .mc1 .corner-accent { background: var(--saffron); }
+  .mc2 { border-top: 2px solid #A78BFA; }
+  .mc2 .corner-accent { background: #A78BFA; }
+  .mc3 { border-top: 2px solid var(--green); }
+  .mc3 .corner-accent { background: var(--green); }
+  .mc4 { border-top: 2px solid #FBBF24; }
+  .mc4 .corner-accent { background: #FBBF24; }
+
+  /* DATA FLOW VISUAL */
+  .flow-box {
+    background: var(--card);
+    border: 1px solid var(--navy-border);
+    border-radius: 14px;
+    padding: 32px;
+    margin-bottom: 56px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--muted);
+  }
+
+  .flow-box .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--navy-border);
+  }
+  .flow-box .flow-row:last-child { border-bottom: none; }
+
+  .flow-label {
+    color: var(--white);
+    font-weight: 700;
+    min-width: 180px;
+  }
+
+  .flow-arrow { color: var(--saffron); font-size: 16px; }
+
+  .flow-val {
+    background: var(--navy-light);
+    border: 1px solid var(--navy-border);
+    border-radius: 4px;
+    padding: 2px 10px;
+    color: var(--green-light);
+    font-size: 11px;
+  }
+
+  /* TECH STACK TABLE */
+  .stack-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 56px;
+  }
+
+  .stack-table th {
+    text-align: left;
+    color: var(--saffron);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--navy-border);
+  }
+
+  .stack-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(30,45,74,0.5);
+    color: var(--muted);
+    vertical-align: top;
+  }
+
+  .stack-table td:first-child { color: var(--white); font-weight: 700; }
+  .stack-table td:nth-child(2) { color: var(--green-light); }
+  .stack-table tr:hover td { background: var(--navy-light); }
+
+  /* HINGLISH NOTE */
+  .hinglish-box {
+    background: linear-gradient(135deg, rgba(255,107,0,0.08), rgba(0,168,107,0.08));
+    border: 1px solid var(--saffron);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 56px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .hinglish-icon { font-size: 32px; }
+
+  .hinglish-box h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--saffron-light);
+  }
+
+  .hinglish-box ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .hinglish-box li {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+  }
+
+  .hinglish-box li::before { content: '▸'; color: var(--green); }
+
+  /* FOOTER */
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 24px;
+    border-top: 1px solid var(--navy-border);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .india-flag {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .flag-s { width: 16px; height: 6px; border-radius: 1px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <span class="badge">India Innovates 2026 · Smart Political CRM · ML Architecture</span>
+    <h1>Full ML Pipeline<br>Architecture</h1>
+    <p>Hinglish-aware · 4-Model System · Demo-Ready · Bharat Mandapam, 28 March 2026</p>
+  </div>
+
+  <!-- PIPELINE FLOW -->
+  <div class="section-title">01 · End-to-End Pipeline</div>
+  <div class="pipeline">
+
+    <div class="pipeline-step s1">
+      <div class="step-connector">
+        <div class="step-num">01</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>🎤 Citizen Input</h3>
+        <p>Raw input received from citizen via multiple channels. Supports text and voice in Hindi, English, or Hinglish.</p>
+        <div class="tags">
+          <span class="tag">WhatsApp / SMS</span>
+          <span class="tag">Web Form</span>
+          <span class="tag">Mobile App</span>
+          <span class="tag">Voice Call</span>
+          <span class="tag">Multilingual</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step s2">
+      <div class="step-connector">
+        <div class="step-num">02</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>🔊 Voice-to-Text + Language Detection</h3>
+        <p>If voice input: transcribe using Whisper. Detect language (hi/en/hinglish) using langdetect + custom rules. Normalize text.</p>
+        <div class="tags">
+          <span class="tag">OpenAI Whisper</span>
+          <span class="tag">langdetect</span>
+          <span class="tag">IndicNLP</span>
+          <span class="tag">Devanagari Support</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step s3">
+      <div class="step-connector">
+        <div class="step-num">03</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>🧹 Preprocessing</h3>
+        <p>Clean and normalize text: remove noise, transliterate Hinglish to Hindi/English, tokenize, remove stopwords.</p>
+        <div class="tags">
+          <span class="tag">IndicNLP / iNLTK</span>
+          <span class="tag">indic-transliterate</span>
+          <span class="tag">regex</span>
+          <span class="tag">NLTK</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step s4">
+      <div class="step-connector">
+        <div class="step-num">04</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>🤖 4-Model NLP Engine <span style="font-size:11px;color:var(--muted);font-weight:400;">(runs in parallel)</span></h3>
+        <p>Preprocessed text is passed simultaneously to all 4 ML models. Each returns a structured output that is merged into one unified complaint object.</p>
+        <div class="tags">
+          <span class="tag">FastText</span>
+          <span class="tag">mBERT</span>
+          <span class="tag">VADER</span>
+          <span class="tag">XGBoost</span>
+          <span class="tag">TF-IDF</span>
+          <span class="tag">Parallel Inference</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step s5">
+      <div class="step-connector">
+        <div class="step-num">05</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>📊 Dashboard + Auto-Assignment</h3>
+        <p>Merged complaint object is stored in DB. Dashboard updates in real-time. Complaint auto-routed to relevant department based on category + urgency score.</p>
+        <div class="tags">
+          <span class="tag">PostgreSQL / SQLite</span>
+          <span class="tag">FastAPI Backend</span>
+          <span class="tag">React Dashboard</span>
+          <span class="tag">Rule-based Routing</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-step s6">
+      <div class="step-connector">
+        <div class="step-num">06</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-card">
+        <h3>🔔 Smart Citizen Notification</h3>
+        <p>Notification Engine generates personalized status update in citizen's preferred language. Sent via WhatsApp / SMS / App push.</p>
+        <div class="tags">
+          <span class="tag">Content-Based Filtering</span>
+          <span class="tag">Twilio / MSG91</span>
+          <span class="tag">Template Engine</span>
+          <span class="tag">Hindi + English</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 4 MODELS -->
+  <div class="section-title">02 · The 4 ML Models</div>
+  <div class="models-grid">
+
+    <div class="model-card mc1">
+      <div class="corner-accent"></div>
+      <div class="model-icon">🗂️</div>
+      <h3>Complaint Categorization</h3>
+      <div class="tool">FastText · Text Classification</div>
+      <div class="model-detail">
+        Classifies complaint into: Water, Roads, Electricity, Health, Security, Corruption, Other.<br><br>
+        FastText handles Hinglish well via subword embeddings. Train on labelled complaint dataset (~1000 examples sufficient for demo).
+      </div>
+    </div>
+
+    <div class="model-card mc2">
+      <div class="corner-accent"></div>
+      <div class="model-icon">😤</div>
+      <h3>Sentiment Analysis</h3>
+      <div class="tool">VADER + mBERT · Dual Model</div>
+      <div class="model-detail">
+        VADER handles English sentences fast. mBERT (multilingual-BERT) handles Hindi + Hinglish sentences.<br><br>
+        Output: Positive / Negative / Neutral + anger score. High-anger complaints flagged as URGENT.
+      </div>
+    </div>
+
+    <div class="model-card mc3">
+      <div class="corner-accent"></div>
+      <div class="model-icon">📍</div>
+      <h3>Predictive Hotspot</h3>
+      <div class="tool">XGBoost + GeoPandas · Trend Model</div>
+      <div class="model-detail">
+        Takes: complaint category, location (ward/area), timestamp, frequency. Predicts: which areas will have surge in complaints next 7 days.<br><br>
+        Map visualization using Folium.
+      </div>
+    </div>
+
+    <div class="model-card mc4">
+      <div class="corner-accent"></div>
+      <div class="model-icon">🔔</div>
+      <h3>Smart Notification Engine</h3>
+      <div class="tool">TF-IDF + Cosine Similarity</div>
+      <div class="model-detail">
+        Matches complaint type → pre-written response templates. Selects best-fit template. Fills in citizen name, complaint ID, status, ETA.<br><br>
+        Sends in citizen's preferred language.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DATA FLOW -->
+  <div class="section-title">03 · Data Object Flow</div>
+  <div class="flow-box">
+    <div class="flow-row">
+      <span class="flow-label">Raw Input</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">"Meri gali mein paani nahi aata 3 din se, bahut problem ho rahi hai"</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Lang Detected</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">hinglish</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Preprocessed</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">gali paani nahi 3 din problem</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Category</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">Water Supply</span>
+      <span style="color:var(--muted);font-size:11px;">(FastText · conf: 0.93)</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Sentiment</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">Negative · Anger: 0.78</span>
+      <span style="color:var(--muted);font-size:11px;">(mBERT)</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Urgency Score</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">HIGH · 8.4/10</span>
+      <span style="color:var(--muted);font-size:11px;">(anger + duration keyword)</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Auto-Assigned To</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">Jal Board · Ward 14</span>
+    </div>
+    <div class="flow-row">
+      <span class="flow-label">Citizen Notified</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-val">"आपकी शिकायत (ID: #4821) जल बोर्ड को भेज दी गई है। 48 घंटों में समाधान होगा।"</span>
+    </div>
+  </div>
+
+  <!-- HINGLISH HANDLING -->
+  <div class="section-title">04 · Hinglish-Specific Strategy</div>
+  <div class="hinglish-box">
+    <div class="hinglish-icon">🇮🇳</div>
+    <div>
+      <h3>Hindi + English + Hinglish Support</h3>
+      <ul>
+        <li>Use <strong>langdetect</strong> + custom rules to identify Hinglish (mixed script / romanized Hindi)</li>
+        <li>Use <strong>indic-transliterate</strong> library to convert Romanized Hindi → Devanagari before model input</li>
+        <li>FastText subword embeddings handle OOV Hinglish words natively</li>
+        <li>mBERT is pretrained on 104 languages including Hindi — fine-tune on your Hinglish dataset</li>
+        <li>VADER used only for English-dominant sentences; mBERT fallback for rest</li>
+        <li>Notification templates available in both Hindi and English, selected by citizen preference</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TECH STACK TABLE -->
+  <div class="section-title">05 · Full Tech Stack</div>
+  <table class="stack-table">
+    <tr>
+      <th>Layer</th>
+      <th>Tool / Library</th>
+      <th>Purpose</th>
+    </tr>
+    <tr>
+      <td>Voice Input</td>
+      <td>OpenAI Whisper (small model)</td>
+      <td>Speech-to-text, Hindi + English</td>
+    </tr>
+    <tr>
+      <td>Language Detection</td>
+      <td>langdetect + custom rules</td>
+      <td>Detect hi / en / hinglish</td>
+    </tr>
+    <tr>
+      <td>Transliteration</td>
+      <td>indic-transliterate</td>
+      <td>Romanized Hindi → Devanagari</td>
+    </tr>
+    <tr>
+      <td>Preprocessing</td>
+      <td>IndicNLP, iNLTK, NLTK, regex</td>
+      <td>Tokenize, clean, normalize</td>
+    </tr>
+    <tr>
+      <td>Categorization</td>
+      <td>FastText (supervised)</td>
+      <td>Complaint category classification</td>
+    </tr>
+    <tr>
+      <td>Sentiment</td>
+      <td>VADER + mBERT (fine-tuned)</td>
+      <td>Sentiment + anger detection</td>
+    </tr>
+    <tr>
+      <td>Predictive</td>
+      <td>XGBoost + GeoPandas + Folium</td>
+      <td>Hotspot forecasting + map</td>
+    </tr>
+    <tr>
+      <td>Notification</td>
+      <td>TF-IDF + cosine similarity</td>
+      <td>Template matching + personalisation</td>
+    </tr>
+    <tr>
+      <td>Backend API</td>
+      <td>FastAPI (Python)</td>
+      <td>REST endpoints, model serving</td>
+    </tr>
+    <tr>
+      <td>Database</td>
+      <td>PostgreSQL / SQLite (demo)</td>
+      <td>Citizen + complaint storage</td>
+    </tr>
+    <tr>
+      <td>Dashboard</td>
+      <td>React + Recharts / Streamlit</td>
+      <td>Real-time CRM UI</td>
+    </tr>
+    <tr>
+      <td>SMS / WhatsApp</td>
+      <td>Twilio / MSG91</td>
+      <td>Citizen notification delivery</td>
+    </tr>
+  </table>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Smart Political CRM · India Innovates 2026</span>
+    <div class="india-flag">
+      <div class="flag-s" style="background:#FF9933;"></div>
+      <div class="flag-s" style="background:#FFFFFF;"></div>
+      <div class="flag-s" style="background:#138808;"></div>
+      <span style="margin-left:8px;">Bharat Mandapam, New Delhi · 28 March 2026</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
